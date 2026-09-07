@@ -24,6 +24,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "wgsl-env.d.ts",
     "next.config.ts",
     "**/*.ts",
     "**/*.tsx",

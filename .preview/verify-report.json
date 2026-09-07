@@ -1,0 +1,24 @@
+{
+  "hasStripe": false,
+  "hasBadge": false,
+  "hasExa": true,
+  "hasExaUrl": true,
+  "hasLanyardToggle": true,
+  "afterLanyard": "id-cards\n\nPress d to switch theme.\n\nCard\nLanyard\n\nDrag the card.\n\nLinear\n\nACCESS CARD\n\nFOUNDING MEMBER\n\nKESHAV\n\nDEVELOPER\n\nBrand\nWebsite\nPull brand\n\nPulls logo, colours, and name. About 10 seconds.\n\nReplace logo\nUse name\nLinear\nVercel\nApple\nExa\n\nLinear\n\nlinear.app\n\nPrimary #5e6ad2\nAccent #e4f222\nBackground #08090a\nText #f7f8f8\nStyle\n\nAccess\n\nBrushed metal member card with QR.\n\nLaminate\n\nHolographi",
+  "canvasCount": 2,
+  "canvasBox": {
+    "x": 528,
+    "y": 384,
+    "w": 1056,
+    "h": 670
+  },
+  "lanyardPos": "-0.58,-0.37,0.01",
+  "mobileHasLanyard": true,
+  "logs": [],
+  "allLogs": [
+    "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "log: [HMR] connected",
+    "warning: THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.",
+    "warning: using deprecated parameters for the initialization function; pass a single object instead"
+  ]
+}

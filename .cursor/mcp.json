@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vgpu": {
+      "command": "npx",
+      "args": ["-y", "vgpu", "mcp", "--project-from-cwd"]
+    }
+  }
+}
