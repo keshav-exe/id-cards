@@ -7,6 +7,12 @@ import { SAMPLE_BRANDS } from "@/lib/brands/samples"
 import { exportCardPng } from "@/lib/card/export"
 import type { MaterialRenderer } from "@/lib/card/material"
 import {
+  DEFAULT_TYPEFACE,
+  type TypefaceId,
+  typefaceById,
+  typefaceStack,
+} from "@/lib/card/typefaces"
+import {
   colorwaysFor,
   DEFAULT_MEMBER,
   getVariant,
@@ -21,6 +27,7 @@ import { cn } from "@/lib/utils"
 
 import { BrandPanel } from "./brand-panel"
 import { ColorwayPicker } from "./colorway-picker"
+import { FontPicker } from "./font-picker"
 import { DetailsForm } from "./details-form"
 import { VariantPicker } from "./variant-picker"
 import { ThemeToggle } from "./theme-toggle"
@@ -35,6 +42,7 @@ export function Studio() {
     getVariant("access").defaultColorway
   )
   const [member, setMember] = useState<Member>(DEFAULT_MEMBER)
+  const [typefaceId, setTypefaceId] = useState<TypefaceId>(DEFAULT_TYPEFACE)
   const [logoInvertOverride, setLogoInvertOverride] = useState<boolean | null>(
     null
   )
@@ -99,7 +107,7 @@ export function Studio() {
         >
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,var(--foreground)_1px,transparent_0)] opacity-[0.035] bg-size-[20px_20px] dark:opacity-[0.06]"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,var(--foreground)_1px,transparent_0)] bg-size-[20px_20px] opacity-[0.035] dark:opacity-[0.06]"
           />
           <div
             aria-hidden
@@ -129,6 +137,7 @@ export function Studio() {
                 ? "max-w-[16rem] sm:max-w-[18rem] xl:max-w-[20rem]"
                 : "max-w-md xl:max-w-lg"
             )}
+            style={{ fontFamily: typefaceStack(typefaceById(typefaceId)) }}
           />
         </main>
 
@@ -155,12 +164,15 @@ export function Studio() {
             </InspectorSection>
 
             <InspectorSection title="Style">
-              <VariantPicker
-                variants={VARIANTS}
-                value={variantId}
-                onValueChange={chooseVariant}
-                colorway={colorway}
-              />
+              <div className="flex flex-col gap-4">
+                <VariantPicker
+                  variants={VARIANTS}
+                  value={variantId}
+                  onValueChange={chooseVariant}
+                  colorway={colorway}
+                />
+                <FontPicker value={typefaceId} onValueChange={setTypefaceId} />
+              </div>
             </InspectorSection>
 
             <InspectorSection title="Finish" aside={colorway.label}>
@@ -182,7 +194,7 @@ export function Studio() {
             </InspectorSection>
           </div>
 
-          <div className="mt-auto border-t border-foreground/10 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sticky bottom-0 bg-background">
+          <div className="sticky bottom-0 mt-auto border-t border-foreground/10 bg-background p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             <Button
               type="button"
               size="lg"

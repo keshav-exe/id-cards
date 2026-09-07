@@ -92,7 +92,7 @@ function Access({ brand, member, logoInvert }: CardLayoutProps) {
             <Eyebrow>{member.tier}</Eyebrow>
             <p
               title={member.name}
-              className="truncate font-mono text-[5.2cqw] leading-none font-medium tracking-[0.06em] uppercase"
+              className="truncate text-[5.2cqw] leading-none font-medium tracking-[0.06em] uppercase"
             >
               {member.name}
             </p>
@@ -226,7 +226,7 @@ function Aurora({ brand, member, logoInvert }: CardLayoutProps) {
       <div className="flex flex-col gap-[3cqw]">
         <h2
           title={member.name}
-          className="line-clamp-3 font-serif text-[14cqw] leading-[0.94] tracking-[-0.02em] text-balance"
+          className="line-clamp-3 text-[14cqw] leading-[0.94] tracking-[-0.02em] text-balance"
         >
           {member.name}
         </h2>
@@ -274,7 +274,7 @@ function Ledger({ brand, member, logoInvert }: CardLayoutProps) {
 
         <p
           title={member.name}
-          className="truncate font-mono text-[6.4cqw] leading-none font-medium tracking-[0.04em] uppercase"
+          className="truncate text-[6.4cqw] leading-none font-medium tracking-[0.04em] uppercase"
         >
           {member.name}
         </p>

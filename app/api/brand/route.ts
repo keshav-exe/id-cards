@@ -1,16 +1,18 @@
-import { execFile } from "node:child_process"
-import { mkdtemp, readFile, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
-import { promisify } from "node:util"
+import { extractBranding } from "@/lib/brandpull"
+import { extractBrandProfile } from "@/lib/extract-brand"
+import { normalizeBrand } from "@/lib/brand"
+import { isPrivateHost, withHttps } from "@/lib/net"
 
-import { normalizeBrand, type BrandpullProfile } from "@/lib/brand"
-
-const run = promisify(execFile)
+// Chromium cold start (~3s) + navigation (≤15s) + settle. Fluid Compute
+// allows this on Hobby; the fetch fallback keeps failures cheap.
+export const maxDuration = 60
 
 /**
  * POST { url } → normalized Brand.
- * Shells out to the local `brandpull` bin (Chromium via Playwright, 5–20 s).
+ *
+ * Primary: brandpull's rendered extraction in headless Chromium (exact port,
+ * runs in-process). Fallback: the fetch-only extractor when Chromium can't
+ * launch or the page refuses to render (bot walls, timeouts).
  */
 export async function POST(request: Request) {
   let body: { url?: string }
@@ -26,69 +28,64 @@ export async function POST(request: Request) {
   const target = coerceUrl(body.url)
   if (!target) {
     return Response.json(
-      { error: "Enter a full website address, like https://linear.app." },
+      { error: "Enter a website, like linear.app." },
       { status: 400 }
     )
   }
 
-  const dir = await mkdtemp(join(tmpdir(), "brandpull-"))
-  const out = join(dir, "brand.json")
+  const errors: string[] = []
 
   try {
-    await run(
-      join(process.cwd(), "node_modules/.bin/brandpull"),
-      [target, "--no-preview", "-o", out, "--timeout", "30000"],
-      {
-        timeout: 90_000,
-        env: { ...process.env, CI: "1" },
-        maxBuffer: 8 * 1024 * 1024,
-      }
-    )
-    const profile = JSON.parse(await readFile(out, "utf8")) as BrandpullProfile
+    const profile = await extractBranding(target, {
+      timeoutMs: 15_000,
+      waitMs: 1_500,
+    })
     return Response.json({
+      engine: "chromium",
+      brand: normalizeBrand({
+        ...profile,
+        url: profile.finalUrl || profile.url || target,
+      }),
+    })
+  } catch (error) {
+    errors.push(describe(error))
+    console.warn("[brand] chromium failed, falling back to fetch:", errors[0])
+  }
+
+  try {
+    const profile = await extractBrandProfile(target)
+    return Response.json({
+      engine: "fetch",
       brand: normalizeBrand({ ...profile, url: profile.url ?? target }),
     })
   } catch (error) {
-    const detail = describe(error)
-    return Response.json(
-      {
-        error:
-          `brandpull couldn't read ${new URL(target).hostname}. ${detail}`.trim(),
-      },
-      { status: 502 }
-    )
-  } finally {
-    await rm(dir, { recursive: true, force: true }).catch(() => undefined)
+    errors.push(describe(error))
   }
+
+  const host = new URL(target).hostname
+  return Response.json(
+    { error: `Couldn't read ${host}. ${errors.at(-1) ?? ""}`.trim() },
+    { status: 502 }
+  )
+}
+
+function describe(error: unknown): string {
+  return error instanceof Error
+    ? error.message.split("\n")[0].slice(0, 160)
+    : String(error).slice(0, 160)
 }
 
 function coerceUrl(value: string | undefined): string | null {
   if (!value) return null
-  const trimmed = value.trim()
+  const trimmed = withHttps(value)
   if (!trimmed) return null
-  const withScheme = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`
   try {
-    const url = new URL(withScheme)
+    const url = new URL(trimmed)
     if (!url.hostname.includes(".")) return null
+    if (isPrivateHost(url.hostname)) return null
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
     return url.toString()
   } catch {
     return null
   }
-}
-
-function describe(error: unknown): string {
-  if (error && typeof error === "object") {
-    const e = error as {
-      killed?: boolean
-      stderr?: string
-      code?: string | number
-    }
-    if (e.killed) return "It timed out after 90 seconds."
-    if (e.code === "ENOENT") return "brandpull isn't installed."
-    const stderr = (e.stderr ?? "").toString().trim().split("\n").at(-1)
-    if (stderr) return stderr.slice(0, 200)
-  }
-  return error instanceof Error ? error.message : ""
 }

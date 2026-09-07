@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next"
 import { Geist_Mono, Instrument_Serif, Outfit } from "next/font/google"
 
+import { cardFontVariables } from "@/app/card-fonts"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
@@ -12,7 +13,7 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-// Display face for the Aurora card only — a single 400 weight.
+// Card serif option + Aurora fallback.
 const fontSerif = Instrument_Serif({
   subsets: ["latin"],
   weight: "400",
@@ -33,7 +34,8 @@ export default function RootLayout({
         "font-sans",
         fontSans.variable,
         fontMono.variable,
-        fontSerif.variable
+        fontSerif.variable,
+        ...cardFontVariables
       )}
     >
       <body>

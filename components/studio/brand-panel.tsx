@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 
 import { type Brand } from "@/lib/brand"
 import { SAMPLE_BRANDS } from "@/lib/brands/samples"
+import { withHttps } from "@/lib/net"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -29,24 +30,28 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
 
   async function pull(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!url.trim() || pending) return
+    const target = withHttps(url)
+    if (!target || pending) return
+    setUrl(target)
     setPending(true)
     setError(null)
     try {
       const res = await fetch("/api/brand", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: target }),
       })
       const data = (await res.json()) as { brand?: Brand; error?: string }
       if (!res.ok || !data.brand) {
-        throw new Error(data.error ?? "brandpull returned nothing usable.")
+        throw new Error(
+          data.error ?? "Couldn't pull a usable brand from that site."
+        )
       }
       revokeLogo(brand)
       onBrandChange(data.brand)
       setUrl("")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "brandpull failed.")
+      setError(err instanceof Error ? err.message : "Couldn't pull that brand.")
     } finally {
       setPending(false)
     }
@@ -88,13 +93,17 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
             <Input
               id="brand-url"
               name="url"
-              type="url"
+              type="text"
               inputMode="url"
               autoComplete="off"
               spellCheck={false}
-              placeholder="https://linear.app"
+              placeholder="linear.app"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
+              onBlur={() => {
+                const next = withHttps(url)
+                if (next !== url) setUrl(next)
+              }}
               aria-invalid={error ? true : undefined}
               aria-busy={pending}
               disabled={pending}
@@ -113,15 +122,7 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
             <FieldError>{error}</FieldError>
           ) : (
             <FieldDescription>
-              Pulls logo, colours, and name via{" "}
-              <a
-                href="https://github.com/suraj-xd/brandpull"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                brandpull
-              </a>
-              . About 10 seconds.
+              Reads the site&apos;s logo, colours, and name.
             </FieldDescription>
           )}
         </Field>
@@ -137,7 +138,7 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
         >
           {brand.logo ? "Replace logo" : "Upload logo"}
           <span
-            className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
+            className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
             aria-hidden="true"
           />
         </Button>
@@ -151,7 +152,7 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
           >
             Use name
             <span
-              className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
+              className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
               aria-hidden="true"
             />
           </Button>
@@ -186,7 +187,7 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
           >
             {sample.name}
             <span
-              className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
+              className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
               aria-hidden="true"
             />
           </Button>
@@ -199,21 +200,29 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
 }
 
 function BrandSummary({ brand }: { brand: Brand }) {
-  const swatches = [
-    ["Primary", brand.colors.primary],
-    ["Accent", brand.colors.accent],
+  const swatches: [string, string][] = [
+    ...brand.palette.map((hex, i): [string, string] => [
+      i === 0 ? "Brand" : `Brand ${i + 1}`,
+      hex,
+    ]),
     ["Background", brand.colors.background],
     ["Text", brand.colors.text],
-  ] as const
+  ]
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 ring-1 ring-foreground/10">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="truncate text-base font-medium sm:text-sm">{brand.name}</p>
+        <p className="truncate text-base font-medium sm:text-sm">
+          {brand.name}
+        </p>
         <p className="truncate font-mono text-sm text-muted-foreground">
           {brand.domain}
         </p>
       </div>
-      <ul role="list" className="flex shrink-0 gap-1" aria-label="Brand colours">
+      <ul
+        role="list"
+        className="flex shrink-0 gap-1"
+        aria-label="Brand colours"
+      >
         {swatches.map(([label, hex]) => (
           <li
             key={label}

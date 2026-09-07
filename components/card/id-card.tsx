@@ -91,7 +91,10 @@ export function IdCard({
     <div
       ref={ref}
       data-card
-      className={cn("[container-type:inline-size] w-full", className)}
+      className={cn(
+        "font-synthesis-none [container-type:inline-size] w-full",
+        className
+      )}
       style={style}
     >
       <article

@@ -23,13 +23,20 @@ export interface BrandpullProfile {
   } | null
   colors?: {
     primary?: string | null
+    secondary?: string | null
     accent?: string | null
     background?: string | null
     textPrimary?: string | null
+    textSecondary?: string | null
+    link?: string | null
   } | null
   fonts?: unknown[]
   typography?: Record<string, unknown>
-  components?: Record<string, unknown>
+  components?: {
+    buttonPrimary?: { background?: string | null; textColor?: string | null }
+    buttonSecondary?: { background?: string | null; textColor?: string | null }
+    input?: unknown
+  } | null
   confidence?: Record<string, unknown>
 }
 
@@ -51,6 +58,12 @@ export interface Brand {
     background: string
     text: string
   }
+  /**
+   * Every distinct chromatic colour the site uses, identity hue first. Unlike
+   * `colors`, highlighters (Ramp lime, Linear yellow) survive here so they can
+   * be offered as card finishes.
+   */
+  palette: string[]
   /** 1–2 letters used when there is no logo. */
   monogram: string
   /** True when the site itself is dark-themed. */
@@ -67,7 +80,7 @@ const FALLBACK: Brand["colors"] = {
 export function normalizeBrand(profile: BrandpullProfile): Brand {
   const url = safeUrl(profile.url) ?? "https://example.com"
   const domain = new URL(url).hostname.replace(/^www\./, "")
-  const name = (profile.brandName ?? "").trim() || titleFromDomain(domain)
+  const name = brandName(profile.brandName, domain)
 
   const background =
     parseColor(profile.colors?.background) ?? parseColor(FALLBACK.background)!
@@ -86,6 +99,13 @@ export function normalizeBrand(profile: BrandpullProfile): Brand {
     profile.images?.favicon,
   ])
 
+  const colors = {
+    primary: toHex(primary),
+    accent: toHex(accent),
+    background: toHex(background),
+    text: toHex(text),
+  }
+
   return {
     id: slug(domain),
     name,
@@ -95,12 +115,8 @@ export function normalizeBrand(profile: BrandpullProfile): Brand {
     logoShape: detectLogoShape(logo),
     favicon: pickLogo([profile.images?.favicon]),
     ogImage: safeUrl(profile.images?.ogImage),
-    colors: {
-      primary: toHex(primary),
-      accent: toHex(accent),
-      background: toHex(background),
-      text: toHex(text),
-    },
+    colors,
+    palette: extractPalette(profile, identityHue(colors)),
     monogram: monogramFor(name),
     dark: luminance(background) < 0.4,
   }
@@ -140,9 +156,46 @@ function refineBrandColors({
 
 /** Identity hue for materials, photos, and metal tints. */
 export function brandHue(brand: Brand): RGB {
-  const primary = parseColor(brand.colors.primary)!
-  const accent = parseColor(brand.colors.accent)!
-  const background = parseColor(brand.colors.background)!
+  return identityHue(brand.colors)
+}
+
+/**
+ * Chromatic colours worth offering as a finish, identity first. Pulls from
+ * every slot brandpull fills (palette, link, button fills) so a site whose
+ * loudest colour is a highlighter still gets it as an option. Near-duplicates
+ * collapse; paper, ink, and greys are dropped.
+ */
+function extractPalette(profile: BrandpullProfile, identity: RGB): string[] {
+  const sources = [
+    profile.colors?.primary,
+    profile.colors?.accent,
+    profile.components?.buttonPrimary?.background,
+    profile.colors?.secondary,
+    profile.colors?.link,
+    profile.components?.buttonSecondary?.background,
+    profile.components?.buttonPrimary?.textColor,
+  ]
+
+  const picked: RGB[] = [identity]
+  for (const source of sources) {
+    const color = parseColor(source)
+    if (!color) continue
+    if (isPaper(color) || isInk(color) || chroma(color) < 0.12) continue
+    if (picked.some((existing) => distance(existing, color) < 0.16)) continue
+    picked.push(color)
+    if (picked.length >= 4) break
+  }
+  return picked.map(toHex)
+}
+
+function distance(a: RGB, b: RGB): number {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+}
+
+function identityHue(colors: Brand["colors"]): RGB {
+  const primary = parseColor(colors.primary)!
+  const accent = parseColor(colors.accent)!
+  const background = parseColor(colors.background)!
 
   const ranked = [primary, accent]
     .map((color, index) => ({
@@ -164,7 +217,10 @@ function identityScore(color: RGB, role: "primary" | "accent"): number {
 
   let score = sat
   if (role === "primary") score += 0.18
-  if (isHighlighter(color)) score -= role === "accent" ? 0.85 : 0.22
+  // Rendered sites often report the highlighter as `primary` (Linear, Ramp).
+  // Prefer a saturated mid-tone identity when one exists; the highlighter
+  // still ships in `palette`.
+  if (isHighlighter(color)) score -= role === "accent" ? 0.85 : 0.45
 
   const lum = luminance(color)
   if (lum > 0.1 && lum < 0.55) score += 0.12
@@ -274,6 +330,20 @@ function safeUrl(value: string | null | undefined): string | null {
   } catch {
     return null
   }
+}
+
+/**
+ * brandpull falls back to `<title>` when a site has no og:site_name, which
+ * yields taglines ("Financial Infrastructure to Grow Your Revenue"). A brand
+ * name is short; anything longer is a tagline and the domain is a better bet.
+ */
+function brandName(raw: string | null | undefined, domain: string) {
+  const value = (raw ?? "").trim()
+  const words = value.split(/\s+/).filter(Boolean)
+  if (!value || value.length > 24 || words.length > 3) {
+    return titleFromDomain(domain)
+  }
+  return value
 }
 
 function titleFromDomain(domain: string) {
