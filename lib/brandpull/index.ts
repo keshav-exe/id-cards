@@ -11,8 +11,9 @@ export type { BrandingProfile } from "./types"
  * Port of https://github.com/suraj-xd/brandpull src/branding/index.ts (MIT).
  *
  * Locally: playwright-core drives the Chromium that `playwright` installed.
- * On Vercel: @sparticuz/chromium ships a Lambda-built headless_shell and is
- * inflated to /tmp on first launch. Set `serverExternalPackages` for both.
+ * On Vercel: @sparticuz/chromium-min downloads a Lambda pack at cold start
+ * (kept out of the deploy bundle — the full package blows past Vercel's
+ * packaging limit and fails with a vague "internal error" after a green build).
  */
 
 export interface ExtractBrandingOptions {
@@ -30,6 +31,11 @@ const IS_SERVERLESS = Boolean(
   process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
 )
 
+/** x64 pack — Vercel Functions run on x86_64 Amazon Linux. */
+const CHROMIUM_PACK_URL =
+  process.env.CHROMIUM_PACK_URL ??
+  "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar"
+
 // Warm instances reuse one Chromium; Fluid Compute may serve concurrent
 // requests from the same process, so each request gets its own context.
 const globalCache = globalThis as unknown as {
@@ -38,12 +44,12 @@ const globalCache = globalThis as unknown as {
 
 async function launchBrowser(): Promise<Browser> {
   if (IS_SERVERLESS) {
-    const { default: sparticuz } = await import("@sparticuz/chromium")
+    const { default: sparticuz } = await import("@sparticuz/chromium-min")
     // WebGL via swiftshader isn't needed for style sampling; skip its setup.
     sparticuz.setGraphicsMode = false
     return playwright.launch({
       args: sparticuz.args,
-      executablePath: await sparticuz.executablePath(),
+      executablePath: await sparticuz.executablePath(CHROMIUM_PACK_URL),
       headless: true,
     })
   }

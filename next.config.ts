@@ -1,20 +1,15 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  // Playwright resolves its driver relative to its own files, and
-  // @sparticuz/chromium locates its Brotli-packed binary the same way.
-  // Bundling either breaks the lookup.
-  serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
-  // nft misses playwright-core's browsers.json / utilsBundle (loaded via
-  // computed require paths) and the Chromium .br archives. Force them in.
-  // pnpm: the top-level entries are symlinks; the .pnpm globs catch the
-  // real files.
+  // Playwright resolves its driver relative to its own files. Leave it
+  // external so require paths stay intact. Chromium itself is downloaded at
+  // runtime via @sparticuz/chromium-min — do NOT NFT-include the pack here
+  // or Vercel dies packaging a 60MB+ function after a green build.
+  serverExternalPackages: ["playwright-core", "@sparticuz/chromium-min"],
   outputFileTracingIncludes: {
     "/api/brand": [
       "./node_modules/playwright-core/**",
       "./node_modules/.pnpm/playwright-core@*/node_modules/playwright-core/**",
-      "./node_modules/@sparticuz/chromium/**",
-      "./node_modules/.pnpm/@sparticuz+chromium@*/node_modules/@sparticuz/chromium/**",
     ],
   },
   turbopack: {
