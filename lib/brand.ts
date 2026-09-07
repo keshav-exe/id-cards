@@ -1,5 +1,6 @@
 import {
   chroma,
+  hueDeg,
   luminance,
   mix,
   parseColor,
@@ -70,11 +71,14 @@ export function normalizeBrand(profile: BrandpullProfile): Brand {
 
   const background =
     parseColor(profile.colors?.background) ?? parseColor(FALLBACK.background)!
-  const primary =
-    parseColor(profile.colors?.primary) ?? parseColor(FALLBACK.primary)!
-  const accent = parseColor(profile.colors?.accent) ?? primary
   const text =
     parseColor(profile.colors?.textPrimary) ?? parseColor(FALLBACK.text)!
+  const { primary, accent } = refineBrandColors({
+    primary:
+      parseColor(profile.colors?.primary) ?? parseColor(FALLBACK.primary)!,
+    accent: parseColor(profile.colors?.accent),
+    background,
+  })
 
   const logo = pickLogo([
     profile.logo,
@@ -103,20 +107,87 @@ export function normalizeBrand(profile: BrandpullProfile): Brand {
 }
 
 /**
- * The most "brand-like" chromatic color. brandpull reports `primary` as the
- * dominant UI color, which on dark sites is often white — so prefer chroma.
+ * brandpull's four slots are a first pass. Dark marketing sites often report
+ * white as `primary` and a product highlighter (Linear lime, status yellow)
+ * as `accent`. For a metal card we want the identity hue, not the loudest one.
  */
+function refineBrandColors({
+  primary,
+  accent,
+  background,
+}: {
+  primary: RGB
+  accent: RGB | null
+  background: RGB
+}): { primary: RGB; accent: RGB } {
+  let nextPrimary = primary
+  let nextAccent = accent ?? primary
+
+  if (isPaper(nextPrimary) && isIdentity(nextAccent)) {
+    nextPrimary = nextAccent
+  } else if (isPaper(nextPrimary) && isIdentity(background)) {
+    nextPrimary = background
+  }
+
+  if (isHighlighter(nextAccent) && isIdentity(nextPrimary)) {
+    nextAccent = mix(nextPrimary, [1, 1, 1], 0.36)
+  } else if (isPaper(nextAccent) && isIdentity(nextPrimary)) {
+    nextAccent = mix(nextPrimary, [1, 1, 1], 0.32)
+  }
+
+  return { primary: nextPrimary, accent: nextAccent }
+}
+
+/** Identity hue for materials, photos, and metal tints. */
 export function brandHue(brand: Brand): RGB {
-  const candidates = [
-    parseColor(brand.colors.accent)!,
-    parseColor(brand.colors.primary)!,
-    parseColor(brand.colors.background)!,
-  ]
-  const chromatic = candidates
-    .filter((c) => chroma(c) > 0.12)
-    .sort((a, b) => chroma(b) - chroma(a))[0]
-  if (chromatic) return chromatic
-  return mix([0.32, 0.33, 0.36], candidates[2], 0.35)
+  const primary = parseColor(brand.colors.primary)!
+  const accent = parseColor(brand.colors.accent)!
+  const background = parseColor(brand.colors.background)!
+
+  const ranked = [primary, accent]
+    .map((color, index) => ({
+      color,
+      score: identityScore(color, index === 0 ? "primary" : "accent"),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  if (ranked[0]) return ranked[0].color
+  if (chroma(background) > 0.12) return background
+  return mix([0.32, 0.33, 0.36], background, 0.35)
+}
+
+function identityScore(color: RGB, role: "primary" | "accent"): number {
+  if (isPaper(color) || isInk(color)) return -1
+  const sat = chroma(color)
+  if (sat < 0.08) return -0.2
+
+  let score = sat
+  if (role === "primary") score += 0.18
+  if (isHighlighter(color)) score -= role === "accent" ? 0.85 : 0.22
+
+  const lum = luminance(color)
+  if (lum > 0.1 && lum < 0.55) score += 0.12
+  return score
+}
+
+function isPaper(color: RGB) {
+  return luminance(color) > 0.86 && chroma(color) < 0.14
+}
+
+function isInk(color: RGB) {
+  return luminance(color) < 0.05
+}
+
+function isHighlighter(color: RGB) {
+  const lum = luminance(color)
+  const sat = chroma(color)
+  const hue = hueDeg(color)
+  return sat > 0.5 && lum > 0.52 && hue >= 42 && hue <= 102
+}
+
+function isIdentity(color: RGB) {
+  return chroma(color) > 0.14 && !isPaper(color) && !isInk(color) && !isHighlighter(color)
 }
 
 export function monogramFor(name: string): string {

@@ -43,8 +43,8 @@ const PROFILES: BrandpullProfile[] = [
     url: "https://exa.ai/",
     logo: "/brands/exa.svg",
     colors: {
-      primary: "#1F40ED",
-      accent: "#20808D",
+      primary: "#1840ED",
+      accent: "#0143D9",
       background: "#181815",
       textPrimary: "#FFFFFF",
     },

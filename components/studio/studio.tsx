@@ -19,7 +19,6 @@ import { IdCard } from "@/components/card/id-card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import { AppHeader } from "./app-header"
 import { BrandPanel } from "./brand-panel"
 import { ColorwayPicker } from "./colorway-picker"
 import { DetailsForm } from "./details-form"
@@ -106,6 +105,15 @@ export function Studio() {
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-linear-to-b from-background/0 via-background/0 to-background/40 dark:to-background/60"
           />
+
+          <a
+            href="https://x.com/kshvbgde"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute top-4 left-4 z-10 text-sm text-muted-foreground"
+          >
+            @kshvbgde
+          </a>
 
           <IdCard
             ref={cardRef}

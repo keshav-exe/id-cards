@@ -113,7 +113,15 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
             <FieldError>{error}</FieldError>
           ) : (
             <FieldDescription>
-              Pulls logo, colours, and name. About 10 seconds.
+              Pulls logo, colours, and name via{" "}
+              <a
+                href="https://github.com/suraj-xd/brandpull"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                brandpull
+              </a>
+              . About 10 seconds.
             </FieldDescription>
           )}
         </Field>

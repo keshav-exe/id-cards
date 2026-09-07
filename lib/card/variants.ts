@@ -95,7 +95,7 @@ export function colorwaysFor(brand: Brand): Colorway[] {
   const accent = parseColor(brand.colors.accent) ?? hue
 
   const brandBase = mix(hue, [0.18, 0.18, 0.2], 0.22)
-  const brandAccent = mix(accent, [1, 1, 1], 0.35)
+  const brandAccent = mix(accent, hue, 0.28)
   const siteBase = mix(
     background,
     [0.14, 0.145, 0.16],
