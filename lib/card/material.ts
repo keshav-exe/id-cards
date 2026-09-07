@@ -6,12 +6,18 @@ import auroraShader from "./shaders/aurora.wgsl"
 import brushedShader from "./shaders/brushed.wgsl"
 import carbonShader from "./shaders/carbon.wgsl"
 import holoShader from "./shaders/holo.wgsl"
+import liquidShader from "./shaders/liquid.wgsl"
+import noirShader from "./shaders/noir.wgsl"
+import paperShader from "./shaders/paper.wgsl"
 
 export const MATERIAL_SHADERS = {
   brushed: brushedShader,
   holo: holoShader,
   carbon: carbonShader,
   aurora: auroraShader,
+  liquid: liquidShader,
+  paper: paperShader,
+  noir: noirShader,
 } as const
 
 export type MaterialId = keyof typeof MATERIAL_SHADERS

@@ -11,7 +11,15 @@ import {
 import type { MaterialId } from "@/lib/card/material"
 
 export type Orientation = "portrait" | "landscape"
-export type VariantId = "access" | "laminate" | "aurora" | "ledger"
+export type VariantId =
+  | "access"
+  | "laminate"
+  | "aurora"
+  | "ledger"
+  | "forge"
+  | "mirror"
+  | "press"
+  | "noir"
 /**
  * `brand`, `brand-2`… follow the brand palette; `site` is the page
  * background; the rest are the fixed defaults below.
@@ -59,6 +67,38 @@ export const VARIANTS: readonly CardVariant[] = [
     material: "brushed",
     orientation: "landscape",
     defaultColorway: "site",
+  },
+  {
+    id: "forge",
+    name: "Forge",
+    description: "Carbon weave, spec-sheet grid.",
+    material: "carbon",
+    orientation: "portrait",
+    defaultColorway: "brand",
+  },
+  {
+    id: "mirror",
+    name: "Mirror",
+    description: "Liquid chrome, mark front and centre.",
+    material: "liquid",
+    orientation: "portrait",
+    defaultColorway: "silver",
+  },
+  {
+    id: "press",
+    name: "Press",
+    description: "Letterpress stock with a debossed monogram.",
+    material: "paper",
+    orientation: "portrait",
+    defaultColorway: "bone",
+  },
+  {
+    id: "noir",
+    name: "Noir",
+    description: "Smoked glass over a neon bloom.",
+    material: "noir",
+    orientation: "landscape",
+    defaultColorway: "brand",
   },
 ]
 

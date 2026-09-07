@@ -17,7 +17,7 @@ struct Params {
   let p = cardSpace(uv, params.texel);
   let t = tilt(params.mouse);
 
-  let cells = 26.0;
+  let cells = 64.0;
   let q = p * cells;
   let ci = floor(q);
   let f = fract(q);
@@ -34,9 +34,9 @@ struct Params {
   let band2 = sheen(p, t, 0.55, 20.0) * 0.4;
   let aniso = select(0.35, 0.9, horizontal) + select(0.55, 0.0, horizontal) * clamp(t.x, 0.0, 1.0);
 
-  var col = params.base * (0.42 + 0.58 * fibre) * (0.55 + 0.45 * dip);
-  col += params.accent * (band + band2) * aniso * fibre * 0.5;
-  col += vec3f(1.0) * pow(fibre, 12.0) * band * aniso * 0.22;
+  var col = params.base * (0.5 + 0.5 * fibre) * (0.6 + 0.4 * dip);
+  col += params.accent * (band + band2) * aniso * fibre * 0.32;
+  col += vec3f(1.0) * pow(fibre, 12.0) * band * aniso * 0.18;
 
   col *= 0.9 + 0.14 * (1.0 - uv.y);
   col += params.accent * edgeLight(uv) * 0.28;

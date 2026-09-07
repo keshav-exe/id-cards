@@ -103,5 +103,11 @@ function swatchBackground(material: MaterialId, base: string, accent: string) {
       return `repeating-linear-gradient(90deg, ${base} 0 3px, ${accent}66 3px 4px), repeating-linear-gradient(0deg, ${base} 0 3px, ${accent}33 3px 4px)`
     case "aurora":
       return `radial-gradient(60% 50% at 30% 30%, ${accent} 0%, transparent 70%), radial-gradient(60% 60% at 75% 75%, ${accent}aa 0%, transparent 70%), ${base}`
+    case "liquid":
+      return `linear-gradient(160deg, ${accent} 0%, ${base} 28%, #ffffffcc 40%, ${base} 52%, ${accent} 70%, ${base} 100%)`
+    case "paper":
+      return `radial-gradient(120% 80% at 50% 0%, ${accent}33 0%, transparent 60%), ${base}`
+    case "noir":
+      return `radial-gradient(55% 60% at 68% 78%, ${accent} 0%, transparent 65%), radial-gradient(40% 40% at 10% 15%, ${accent}66 0%, transparent 70%), color-mix(in oklab, ${base} 62%, black)`
   }
 }

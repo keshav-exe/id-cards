@@ -133,6 +133,16 @@ export function IdCard({
             logoInvert={logoInvert}
           />
         </div>
+        {/* Bevel: a lit top edge and a shaded bottom edge make it a slab, not a rectangle. */}
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-0 rounded-[inherit]",
+            light
+              ? "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.22),inset_0_-1px_0_0_rgba(0,0,0,0.35),inset_1px_0_0_0_rgba(255,255,255,0.07)]"
+              : "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),inset_0_-1px_0_0_rgba(0,0,0,0.14),inset_1px_0_0_0_rgba(255,255,255,0.3)]"
+          )}
+        />
         {error ? (
           <p
             role="alert"
