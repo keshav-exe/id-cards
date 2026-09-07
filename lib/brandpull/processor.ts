@@ -248,6 +248,20 @@ function extractInputs(raw: RawBranding): InputStyle[] {
     };
   });
 }
+function uniqueLogos(raw: RawBranding, selected: string | null | undefined): string[] {
+  const srcs: string[] = [];
+  const push = (src: string | null | undefined) => {
+    if (!src || srcs.includes(src))
+      return;
+    srcs.push(src);
+  };
+  push(selected);
+  for (const candidate of raw.logoCandidates)
+    push(candidate.src);
+  push(raw.images.find((image) => image.type === "favicon")?.src);
+  return srcs.slice(0, 8);
+}
+
 function pickLogo(raw: RawBranding, profile: BrandingProfile) {
   const heuristic = selectLogoWithConfidence(raw.logoCandidates, raw.brandName);
   if (heuristic.selectedIndex >= 0) {
@@ -311,6 +325,7 @@ export function processRawBranding(raw: RawBranding, options: { debug?: boolean;
       favicon: raw.images.find((image) => image.type === "favicon")?.src || null,
       ogImage: raw.images.find((image) => image.type === "og")?.src || raw.images.find((image) => image.type === "twitter")?.src || null
     },
+    logos: [],
     confidence: {
       colors: 0.65,
       buttons: classified.confidence
@@ -326,6 +341,7 @@ export function processRawBranding(raw: RawBranding, options: { debug?: boolean;
   if (classified.secondary)
     profile.components.buttonSecondary = classified.secondary;
   pickLogo(raw, profile);
+  profile.logos = uniqueLogos(raw, profile.logo ?? profile.images.logo);
   profile.confidence = {
     ...profile.confidence,
     overall: ((profile.confidence?.logo ?? 0) + (profile.confidence?.colors ?? 0) + (profile.confidence?.buttons ?? 0)) / 3

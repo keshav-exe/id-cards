@@ -25,12 +25,14 @@ export async function rasterizeCard({
   renderer,
   width = 1080,
 }: RasterizeOptions): Promise<HTMLCanvasElement> {
-  const rect = card.getBoundingClientRect()
-  if (rect.width === 0) throw new Error("The card isn't visible yet.")
+  // offset* ignores the preview's 3D tilt, unlike getBoundingClientRect.
+  const sourceWidth = card.offsetWidth
+  const sourceHeight = card.offsetHeight
+  if (sourceWidth === 0) throw new Error("The card isn't visible yet.")
 
-  const scale = width / rect.width
-  const w = Math.round(rect.width * scale)
-  const h = Math.round(rect.height * scale)
+  const scale = width / sourceWidth
+  const w = Math.round(sourceWidth * scale)
+  const h = Math.round(sourceHeight * scale)
 
   await document.fonts.ready
   await Promise.all(

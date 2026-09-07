@@ -21,6 +21,7 @@ export interface BrandpullProfile {
     favicon?: string | null
     ogImage?: string | null
   } | null
+  logos?: string[] | null
   colors?: {
     primary?: string | null
     secondary?: string | null
@@ -48,6 +49,8 @@ export interface Brand {
   url: string
   /** SVG / PNG / data / blob. Go through `proxyImage()` before canvas paint. */
   logo: string | null
+  /** All usable marks from the pull, selected first. Empty if none. */
+  logos: string[]
   /** Wide lockups sit as the name; square marks sit next to it. */
   logoShape: "mark" | "wordmark"
   favicon: string | null
@@ -93,11 +96,13 @@ export function normalizeBrand(profile: BrandpullProfile): Brand {
     background,
   })
 
-  const logo = pickLogo([
+  const logos = uniqueLogos([
     profile.logo,
+    ...(profile.logos ?? []),
     profile.images?.logo,
     profile.images?.favicon,
   ])
+  const logo = logos[0] ?? null
 
   const colors = {
     primary: toHex(primary),
@@ -112,6 +117,7 @@ export function normalizeBrand(profile: BrandpullProfile): Brand {
     domain,
     url,
     logo,
+    logos,
     logoShape: detectLogoShape(logo),
     favicon: pickLogo([profile.images?.favicon]),
     ogImage: safeUrl(profile.images?.ogImage),
@@ -273,23 +279,55 @@ export function proxyImage(src: string | null): string | null {
 export function pickLogo(
   candidates: (string | null | undefined)[]
 ): string | null {
+  return uniqueLogos(candidates)[0] ?? null
+}
+
+export function uniqueLogos(
+  candidates: (string | null | undefined)[]
+): string[] {
+  const logos: string[] = []
+  const seen = new Set<string>()
   for (const value of candidates) {
-    if (!value) continue
-    if (
-      value.startsWith("data:image/svg+xml") ||
-      value.startsWith("data:image/png") ||
-      value.startsWith("blob:")
-    ) {
-      return value
-    }
-    if (value.startsWith("/") && /\.(svg|png)(\?|#|$)/i.test(value)) {
-      return value
-    }
-    if (/\.ico(\?|#|$)/i.test(value)) continue
-    const url = safeUrl(value)
-    if (url && /\.(svg|png)(\?|#|$)/i.test(url)) return url
+    if (!isUsableLogo(value)) continue
+    const key = logoFingerprint(value)
+    if (seen.has(key)) continue
+    seen.add(key)
+    logos.push(value)
+    if (logos.length >= 8) break
   }
-  return null
+  return logos
+}
+
+/** Collapse the same mark re-serialized with different fill/class. */
+function logoFingerprint(src: string): string {
+  if (src.startsWith("data:image/svg")) {
+    const svg = decodeSvgData(src)
+    if (svg) {
+      return svg
+        .replace(/<!--[\s\S]*?-->/g, "")
+        .replace(/\s(class|style|fill|stroke|id)="[^"]*"/gi, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 800)
+    }
+  }
+  return src.split(/[?#]/)[0] ?? src
+}
+
+export function isUsableLogo(
+  value: string | null | undefined
+): value is string {
+  if (!value) return false
+  if (
+    value.startsWith("data:image/svg+xml") ||
+    value.startsWith("data:image/png") ||
+    value.startsWith("blob:")
+  ) {
+    return true
+  }
+  if (/\.ico(\?|#|$)/i.test(value)) return false
+  if (value.startsWith("/")) return true
+  return Boolean(safeUrl(value))
 }
 
 export function detectLogoShape(src: string | null): "mark" | "wordmark" {

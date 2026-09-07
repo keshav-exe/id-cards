@@ -57,6 +57,7 @@ export async function extractBrandProfile(
       favicon: icons.favicon,
       ogImage: homepage?.ogImage ?? null,
     },
+    logos: icons.logos,
     colors,
   }
 }
@@ -182,7 +183,13 @@ async function collectIcons(origin: URL, html: string, base: URL) {
   const favicon =
     icons.find((url) => /favicon|icon\.svg|icon\.png/i.test(url)) ?? fallback
 
-  return { logo: navLogo ?? fallback, favicon }
+  const logos = unique(
+    [navLogo, ...navVerified, fallback, ...icons].filter(
+      (url): url is string => Boolean(url)
+    )
+  ).slice(0, 8)
+
+  return { logo: navLogo ?? fallback, favicon, logos }
 }
 
 /**

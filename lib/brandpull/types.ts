@@ -197,6 +197,8 @@ export interface BrandingProfile {
     favicon: string | null
     ogImage: string | null
   }
+  /** Unique logo srcs, selected first. Always filled — not debug-only. */
+  logos: string[]
   confidence: {
     logo?: number
     colors?: number

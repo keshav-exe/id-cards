@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 
-import { type Brand } from "@/lib/brand"
+import { detectLogoShape, type Brand } from "@/lib/brand"
 import { SAMPLE_BRANDS } from "@/lib/brands/samples"
 import { withHttps } from "@/lib/net"
 import { Button } from "@/components/ui/button"
@@ -14,15 +14,23 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { LogoPicker } from "./logo-picker"
 
 interface BrandPanelProps {
   brand: Brand
   onBrandChange: (brand: Brand) => void
+  logoInvert: boolean
+  onLogoInvertChange: (value: boolean) => void
 }
 
 const MAX_LOGO_BYTES = 4 * 1024 * 1024
 
-export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
+export function BrandPanel({
+  brand,
+  onBrandChange,
+  logoInvert,
+  onLogoInvertChange,
+}: BrandPanelProps) {
   const [url, setUrl] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,13 +83,27 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
     onBrandChange({
       ...brand,
       logo: src,
+      logos: [src, ...brand.logos.filter((logo) => !logo.startsWith("blob:"))],
       logoShape: "mark",
+    })
+  }
+
+  function pickExtracted(src: string) {
+    onBrandChange({
+      ...brand,
+      logo: src,
+      logoShape: detectLogoShape(src),
     })
   }
 
   function clearLogo() {
     revokeLogo(brand)
-    onBrandChange({ ...brand, logo: null, logoShape: "mark" })
+    onBrandChange({
+      ...brand,
+      logo: null,
+      logos: brand.logos.filter((logo) => !logo.startsWith("blob:")),
+      logoShape: "mark",
+    })
   }
 
   return (
@@ -129,6 +151,11 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
       </form>
 
       <div className="flex flex-wrap gap-1.5">
+        <LogoPicker
+          logos={brand.logos}
+          value={brand.logo}
+          onValueChange={pickExtracted}
+        />
         <Button
           type="button"
           size="xs"
@@ -151,6 +178,22 @@ export function BrandPanel({ brand, onBrandChange }: BrandPanelProps) {
             onClick={clearLogo}
           >
             Use name
+            <span
+              className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
+              aria-hidden="true"
+            />
+          </Button>
+        ) : null}
+        {brand.logo ? (
+          <Button
+            type="button"
+            size="xs"
+            variant={logoInvert ? "secondary" : "outline"}
+            aria-pressed={logoInvert}
+            onClick={() => onLogoInvertChange(!logoInvert)}
+            className="relative"
+          >
+            Invert
             <span
               className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
               aria-hidden="true"

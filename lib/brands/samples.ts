@@ -53,5 +53,11 @@ const PROFILES: BrandpullProfile[] = [
 
 export const SAMPLE_BRANDS: Brand[] = PROFILES.map((profile) => {
   const brand = normalizeBrand(profile)
-  return { ...brand, logo: profile.logo ?? null, logoShape: "mark" as const }
+  const logo = profile.logo ?? null
+  return {
+    ...brand,
+    logo,
+    logos: logo ? [logo] : [],
+    logoShape: "mark" as const,
+  }
 })

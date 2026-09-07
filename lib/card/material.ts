@@ -24,6 +24,8 @@ export interface MaterialState {
 
 export interface MaterialRenderer {
   update(next: Partial<MaterialState>): void
+  /** Pointer in card UV space, origin top-left. Used by the 3D preview tilt. */
+  setMouse(next: readonly [number, number]): void
   /** Render the current material at an arbitrary size and return RGBA bytes. */
   snapshot(size: readonly [number, number]): Promise<Uint8Array>
   dispose(): void
@@ -168,6 +170,10 @@ export function createMaterialRenderer(
   return {
     update(next) {
       state = { ...state, ...next }
+      if (reduceMotion) renderOnce()
+    },
+    setMouse(next) {
+      mouse = next
       if (reduceMotion) renderOnce()
     },
     async snapshot(size) {

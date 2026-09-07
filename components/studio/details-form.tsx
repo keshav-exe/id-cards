@@ -14,9 +14,6 @@ import { Input } from "@/components/ui/input"
 interface DetailsFormProps {
   member: Member
   onMemberChange: (member: Member) => void
-  logoInvert: boolean
-  onLogoInvertChange: (value: boolean) => void
-  hasLogo: boolean
 }
 
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024
@@ -26,13 +23,7 @@ const FILTERS: { id: PhotoFilter; label: string }[] = [
   { id: "brand", label: "Brand" },
 ]
 
-export function DetailsForm({
-  member,
-  onMemberChange,
-  logoInvert,
-  onLogoInvertChange,
-  hasLogo,
-}: DetailsFormProps) {
+export function DetailsForm({ member, onMemberChange }: DetailsFormProps) {
   const photoId = useId()
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -162,18 +153,6 @@ export function DetailsForm({
         </div>
       ) : null}
 
-      {hasLogo ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-pressed={logoInvert}
-          onClick={() => onLogoInvertChange(!logoInvert)}
-          className="self-start aria-pressed:bg-muted"
-        >
-          Invert logo
-        </Button>
-      ) : null}
     </div>
   )
 }

@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import { BrandPanel } from "./brand-panel"
+import { CardTilt } from "./card-tilt"
 import { ColorwayPicker } from "./colorway-picker"
 import { FontPicker } from "./font-picker"
 import { DetailsForm } from "./details-form"
@@ -123,22 +124,27 @@ export function Studio() {
             @kshvbgde
           </a>
 
-          <IdCard
-            ref={cardRef}
+          <CardTilt
             rendererRef={rendererRef}
-            brand={brand}
-            member={member}
-            variant={variant}
-            colorway={colorway}
-            logoInvert={logoInvert}
             className={cn(
-              "relative w-full drop-shadow-2xl",
+              "relative w-full",
               variant.orientation === "portrait"
                 ? "max-w-[16rem] sm:max-w-[18rem] xl:max-w-[20rem]"
                 : "max-w-md xl:max-w-lg"
             )}
-            style={{ fontFamily: typefaceStack(typefaceById(typefaceId)) }}
-          />
+          >
+            <IdCard
+              ref={cardRef}
+              rendererRef={rendererRef}
+              brand={brand}
+              member={member}
+              variant={variant}
+              colorway={colorway}
+              logoInvert={logoInvert}
+              className="relative w-full drop-shadow-2xl"
+              style={{ fontFamily: typefaceStack(typefaceById(typefaceId)) }}
+            />
+          </CardTilt>
         </main>
 
         <aside
@@ -146,21 +152,21 @@ export function Studio() {
           className="flex min-h-0 min-w-0 flex-col border-t border-foreground/10 bg-background lg:overflow-y-auto lg:border-t-0 lg:border-l"
         >
           <div className="hidden items-center justify-between border-b border-foreground/10 px-5 py-4 lg:flex">
-            <div className="">
-              <h2 className="text-base font-medium tracking-tight sm:text-sm">
-                Inspector
-              </h2>
-              <p className="text-base text-pretty text-muted-foreground sm:text-sm">
-                Brand, style, and member details.
-              </p>
-            </div>
+            <h2 className="text-xl font-medium tracking-tight">
+              Studio
+            </h2>
 
             <ThemeToggle />
           </div>
 
           <div className="flex flex-col divide-y divide-foreground/10">
             <InspectorSection title="Brand">
-              <BrandPanel brand={brand} onBrandChange={chooseBrand} />
+              <BrandPanel
+                brand={brand}
+                onBrandChange={chooseBrand}
+                logoInvert={logoInvert}
+                onLogoInvertChange={setLogoInvertOverride}
+              />
             </InspectorSection>
 
             <InspectorSection title="Style">
@@ -184,13 +190,7 @@ export function Studio() {
             </InspectorSection>
 
             <InspectorSection title="Details">
-              <DetailsForm
-                member={member}
-                onMemberChange={setMember}
-                logoInvert={logoInvert}
-                onLogoInvertChange={setLogoInvertOverride}
-                hasLogo={Boolean(brand.logo)}
-              />
+              <DetailsForm member={member} onMemberChange={setMember} />
             </InspectorSection>
           </div>
 
