@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react"
 
 import type { Brand } from "@/lib/brand"
-import { SAMPLE_BRANDS } from "@/lib/brands/samples"
+import { useBrandLibrary } from "@/hooks/use-brand-library"
 import { exportCardPng } from "@/lib/card/export"
 import type { MaterialRenderer } from "@/lib/card/material"
 import {
@@ -37,7 +37,8 @@ type ExportState =
   { status: "idle" } | { status: "busy" } | { status: "error"; message: string }
 
 export function Studio() {
-  const [brand, setBrand] = useState<Brand>(SAMPLE_BRANDS[0])
+  const library = useBrandLibrary()
+  const brand = library.selected
   const [variantId, setVariantId] = useState<VariantId>("access")
   const [colorwayId, setColorwayId] = useState<ColorwayId>(
     getVariant("access").defaultColorway
@@ -74,8 +75,13 @@ export function Studio() {
   }
 
   function chooseBrand(next: Brand) {
-    setBrand(next)
     setLogoInvertOverride(null)
+    library.select(next)
+  }
+
+  function rememberBrand(next: Brand) {
+    setLogoInvertOverride(null)
+    library.remember(next)
   }
 
   async function download() {
@@ -163,7 +169,9 @@ export function Studio() {
             <InspectorSection title="Brand">
               <BrandPanel
                 brand={brand}
+                library={library.brands}
                 onBrandChange={chooseBrand}
+                onRemember={rememberBrand}
                 logoInvert={logoInvert}
                 onLogoInvertChange={setLogoInvertOverride}
               />

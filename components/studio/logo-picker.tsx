@@ -16,7 +16,7 @@ interface LogoPickerProps {
 /** Dropdown grid of every mark the pull found. */
 export function LogoPicker({ logos, value, onValueChange }: LogoPickerProps) {
   const [open, setOpen] = useState(false)
-  if (logos.length === 0) return null
+  if (logos.length < 2) return null
 
   const selected = value && logos.includes(value) ? value : logos[0]
   const count = logos.length
@@ -28,7 +28,7 @@ export function LogoPicker({ logos, value, onValueChange }: LogoPickerProps) {
           <Button type="button" size="xs" variant="outline" className="relative" />
         }
       >
-        Logos
+        Change mark
         {count > 1 ? (
           <span className="text-muted-foreground"> · {count}</span>
         ) : null}
