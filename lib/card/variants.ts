@@ -125,14 +125,54 @@ const DEFAULT_FINISHES: readonly {
   base: RGB
   accent: RGB
 }[] = [
-  { id: "silver", label: "Silver", base: [0.76, 0.77, 0.8], accent: [0.97, 0.97, 0.98] },
-  { id: "graphite", label: "Graphite", base: [0.29, 0.3, 0.33], accent: [0.64, 0.66, 0.7] },
-  { id: "onyx", label: "Onyx", base: [0.075, 0.08, 0.095], accent: [0.3, 0.31, 0.35] },
-  { id: "gold", label: "Gold", base: [0.72, 0.56, 0.18], accent: [0.95, 0.85, 0.55] },
-  { id: "rose-gold", label: "Rose gold", base: [0.72, 0.48, 0.42], accent: [0.94, 0.78, 0.72] },
-  { id: "copper", label: "Copper", base: [0.58, 0.32, 0.2], accent: [0.9, 0.6, 0.42] },
-  { id: "midnight", label: "Midnight", base: [0.07, 0.1, 0.22], accent: [0.26, 0.33, 0.56] },
-  { id: "bone", label: "Bone", base: [0.9, 0.87, 0.8], accent: [0.99, 0.98, 0.95] },
+  {
+    id: "silver",
+    label: "Silver",
+    base: [0.76, 0.77, 0.8],
+    accent: [0.97, 0.97, 0.98],
+  },
+  {
+    id: "graphite",
+    label: "Graphite",
+    base: [0.29, 0.3, 0.33],
+    accent: [0.64, 0.66, 0.7],
+  },
+  {
+    id: "onyx",
+    label: "Onyx",
+    base: [0.075, 0.08, 0.095],
+    accent: [0.3, 0.31, 0.35],
+  },
+  {
+    id: "gold",
+    label: "Gold",
+    base: [0.72, 0.56, 0.18],
+    accent: [0.95, 0.85, 0.55],
+  },
+  {
+    id: "rose-gold",
+    label: "Rose gold",
+    base: [0.72, 0.48, 0.42],
+    accent: [0.94, 0.78, 0.72],
+  },
+  {
+    id: "copper",
+    label: "Copper",
+    base: [0.58, 0.32, 0.2],
+    accent: [0.9, 0.6, 0.42],
+  },
+  {
+    id: "midnight",
+    label: "Midnight",
+    base: [0.07, 0.1, 0.22],
+    accent: [0.26, 0.33, 0.56],
+  },
+  {
+    id: "bone",
+    label: "Bone",
+    base: [0.9, 0.87, 0.8],
+    accent: [0.99, 0.98, 0.95],
+  },
 ]
 
 /**
@@ -253,6 +293,23 @@ export interface Member {
   /** Object URL or data URL of an uploaded photo. */
   photo: string | null
   photoFilter: PhotoFilter
+  /** Custom member number. Empty → hashed from brand + name. */
+  number: string
+  /** Custom QR payload. Empty → brand URL (+ member no. if shown). */
+  qrUrl: string
+  /** Overrides the variant eyebrow ("Access card", "Specimen", …). */
+  label: string
+  showLogo: boolean
+  showName: boolean
+  showRole: boolean
+  showTier: boolean
+  showSince: boolean
+  showPhoto: boolean
+  showNumber: boolean
+  showQr: boolean
+  showMrz: boolean
+  showBarcode: boolean
+  showLabel: boolean
 }
 
 export const LIMITS = {
@@ -260,6 +317,9 @@ export const LIMITS = {
   role: 18,
   tier: 16,
   since: 4,
+  number: 22,
+  qrUrl: 200,
+  label: 22,
 } as const
 
 export const DEFAULT_MEMBER: Member = {
@@ -269,10 +329,26 @@ export const DEFAULT_MEMBER: Member = {
   since: String(new Date().getFullYear()),
   photo: null,
   photoFilter: "none",
+  number: "",
+  qrUrl: "",
+  label: "",
+  showLogo: true,
+  showName: true,
+  showRole: true,
+  showTier: true,
+  showSince: true,
+  showPhoto: true,
+  showNumber: true,
+  showQr: true,
+  showMrz: true,
+  showBarcode: true,
+  showLabel: true,
 }
 
-/** Deterministic 11-digit member number from brand + name, grouped 4-4-3. */
+/** Custom number if set, otherwise a deterministic 11-digit 4-4-3 group. */
 export function memberNumber(brand: Brand, member: Member): string {
+  const custom = member.number.trim()
+  if (custom) return custom
   let h = 2166136261
   for (const ch of `${brand.id}:${member.name.toLowerCase()}`) {
     h ^= ch.charCodeAt(0)
@@ -287,10 +363,161 @@ export function memberNumber(brand: Brand, member: Member): string {
 }
 
 export function qrPayload(brand: Brand, member: Member): string {
-  const url = new URL(brand.url)
-  url.searchParams.set(
-    "member",
-    memberNumber(brand, member).replaceAll(" ", "")
-  )
-  return url.toString()
+  const custom = member.qrUrl.trim()
+  if (custom) return custom
+  try {
+    const url = new URL(brand.url)
+    if (member.showNumber) {
+      url.searchParams.set(
+        "member",
+        memberNumber(brand, member).replaceAll(" ", "")
+      )
+    }
+    return url.toString()
+  } catch {
+    return brand.url
+  }
+}
+
+/** Visibility toggles the card layouts can render per style. */
+export type MemberVisibility = keyof Pick<
+  Member,
+  | "showLogo"
+  | "showName"
+  | "showRole"
+  | "showTier"
+  | "showSince"
+  | "showPhoto"
+  | "showNumber"
+  | "showQr"
+  | "showLabel"
+  | "showMrz"
+  | "showBarcode"
+>
+
+const VISIBILITY = {
+  logo: "showLogo",
+  name: "showName",
+  role: "showRole",
+  tier: "showTier",
+  since: "showSince",
+  photo: "showPhoto",
+  number: "showNumber",
+  qr: "showQr",
+  label: "showLabel",
+  mrz: "showMrz",
+  barcode: "showBarcode",
+} as const satisfies Record<string, MemberVisibility>
+
+export const VARIANT_VISIBILITY: Record<
+  VariantId,
+  readonly MemberVisibility[]
+> = {
+  access: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.photo,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+    VISIBILITY.label,
+  ],
+  laminate: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.photo,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+    VISIBILITY.label,
+    VISIBILITY.mrz,
+  ],
+  aurora: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.photo,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+    VISIBILITY.label,
+  ],
+  ledger: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+    VISIBILITY.label,
+    VISIBILITY.barcode,
+  ],
+  forge: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+    VISIBILITY.label,
+  ],
+  mirror: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+  ],
+  press: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+  ],
+  noir: [
+    VISIBILITY.logo,
+    VISIBILITY.name,
+    VISIBILITY.role,
+    VISIBILITY.tier,
+    VISIBILITY.since,
+    VISIBILITY.number,
+    VISIBILITY.qr,
+  ],
+}
+
+export function variantSupports(
+  variantId: VariantId,
+  key: MemberVisibility
+): boolean {
+  return VARIANT_VISIBILITY[variantId].includes(key)
+}
+
+/** Default eyebrow when the card label field is blank. */
+export function defaultCardLabel(variantId: VariantId): string {
+  switch (variantId) {
+    case "access":
+      return "Access card"
+    case "laminate":
+      return "Specimen"
+    case "aurora":
+      return "Pass"
+    case "ledger":
+      return "Member pass"
+    case "forge":
+      return "Spec"
+    default:
+      return ""
+  }
 }

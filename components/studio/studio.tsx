@@ -2,6 +2,13 @@
 
 import { useMemo, useRef, useState } from "react"
 
+import {
+  CreditCardIcon,
+  Globe02Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+
 import type { Brand } from "@/lib/brand"
 import { useBrandLibrary } from "@/hooks/use-brand-library"
 import { exportCardPng } from "@/lib/card/export"
@@ -25,13 +32,21 @@ import { IdCard } from "@/components/card/id-card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import { BrandPanel } from "./brand-panel"
+import { BrandActiveCard, BrandLibrary, BrandPullForm } from "./brand-panel"
 import { CardTilt } from "./card-tilt"
 import { ColorwayPicker } from "./colorway-picker"
-import { FontPicker } from "./font-picker"
 import { DetailsForm } from "./details-form"
-import { VariantPicker } from "./variant-picker"
+import { FontPicker } from "./font-picker"
+import {
+  Inspector,
+  InspectorBody,
+  InspectorFooter,
+  InspectorGroup,
+  InspectorHeader,
+  InspectorSection,
+} from "./inspector"
 import { ThemeToggle } from "./theme-toggle"
+import { VariantPicker } from "./variant-picker"
 
 type ExportState =
   { status: "idle" } | { status: "busy" } | { status: "error"; message: string }
@@ -71,7 +86,6 @@ export function Studio() {
 
   function chooseVariant(id: VariantId) {
     setVariantId(id)
-    setColorwayId(getVariant(id).defaultColorway)
   }
 
   function chooseBrand(next: Brand) {
@@ -105,12 +119,21 @@ export function Studio() {
     }
   }
 
+  const brandProps = {
+    brand,
+    library: library.brands,
+    onBrandChange: chooseBrand,
+    onRemember: rememberBrand,
+    logoInvert,
+    onLogoInvertChange: setLogoInvertOverride,
+  }
+
   return (
-    <div className="isolate flex h-dvh flex-col overflow-x-clip">
-      <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="isolate flex min-h-dvh flex-col overflow-x-clip lg:h-dvh lg:overflow-hidden">
+      <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_26rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_28rem]">
         <main
           aria-label="Card preview"
-          className="relative flex min-h-[min(36rem,70dvh)] flex-1 items-center justify-center overflow-hidden bg-muted/35 px-6 py-10 dark:bg-neutral-950"
+          className="relative flex h-[min(26rem,44dvh)] shrink-0 items-center justify-center overflow-hidden bg-muted/40 px-4 py-6 sm:px-6 sm:py-8 lg:h-auto lg:min-h-0 lg:flex-1 lg:max-h-none lg:py-10 dark:bg-neutral-950"
         >
           <div
             aria-hidden
@@ -125,18 +148,20 @@ export function Studio() {
             href="https://x.com/kshvbgde"
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute top-4 left-4 z-10 text-sm text-muted-foreground"
+            className="ease absolute top-4 left-4 z-10 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
           >
             @kshvbgde
           </a>
 
+          <span className="ease absolute bottom-4 -translate-x-1/2 left-1/2 z-10 text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md lg:hidden">Best viewed on desktop</span>
+
           <CardTilt
             rendererRef={rendererRef}
             className={cn(
-              "relative w-full",
+              "relative w-full max-h-full",
               variant.orientation === "portrait"
-                ? "max-w-[16rem] sm:max-w-[18rem] xl:max-w-[20rem]"
-                : "max-w-md xl:max-w-lg"
+                ? "max-w-50 sm:max-w-[16rem] lg:max-w-[18rem] xl:max-w-[20rem]"
+                : "max-w-[min(100%,20rem)] sm:max-w-md xl:max-w-lg"
             )}
           >
             <IdCard
@@ -153,56 +178,105 @@ export function Studio() {
           </CardTilt>
         </main>
 
-        <aside
-          aria-label="Card settings"
-          className="flex min-h-0 min-w-0 flex-col border-t border-foreground/10 bg-background lg:overflow-y-auto lg:border-t-0 lg:border-l"
-        >
-          <div className="hidden items-center justify-between border-b border-foreground/10 px-5 py-4 lg:flex">
-            <h2 className="text-xl font-medium tracking-tight">
-              Studio
-            </h2>
-
+        <Inspector>
+          <InspectorHeader title="Studio">
             <ThemeToggle />
-          </div>
+          </InspectorHeader>
 
-          <div className="flex flex-col divide-y divide-foreground/10">
-            <InspectorSection title="Brand">
-              <BrandPanel
-                brand={brand}
-                library={library.brands}
-                onBrandChange={chooseBrand}
-                onRemember={rememberBrand}
-                logoInvert={logoInvert}
-                onLogoInvertChange={setLogoInvertOverride}
-              />
-            </InspectorSection>
+          <InspectorBody>
+            <InspectorGroup
+              title="Brand"
+              icon={
+                <HugeiconsIcon
+                  icon={Globe02Icon}
+                  strokeWidth={1.75}
+                  className="size-4"
+                />
+              }
+            >
+              <InspectorSection
+                title="From the web"
+                description="Pull logo, colours, and name from a site."
+              >
+                <BrandPullForm {...brandProps} />
+              </InspectorSection>
 
-            <InspectorSection title="Style">
-              <div className="flex flex-col gap-4">
+              <InspectorSection title="Active brand">
+                <BrandActiveCard {...brandProps} />
+              </InspectorSection>
+
+              {library.brands.length > 0 ? (
+                <InspectorSection
+                  title="Library"
+                  description="Switch between brands saved in this browser."
+                >
+                  <BrandLibrary {...brandProps} />
+                </InspectorSection>
+              ) : null}
+            </InspectorGroup>
+
+            <InspectorGroup
+              title="Card"
+              icon={
+                <HugeiconsIcon
+                  icon={CreditCardIcon}
+                  strokeWidth={1.75}
+                  className="size-4"
+                />
+              }
+            >
+              <InspectorSection
+                title="Style"
+                description="Layout and material for the card face."
+                padded={false}
+                className="gap-0 p-3"
+              >
                 <VariantPicker
                   variants={VARIANTS}
                   value={variantId}
                   onValueChange={chooseVariant}
                   colorway={colorway}
                 />
+              </InspectorSection>
+
+              <InspectorSection title="Typography">
                 <FontPicker value={typefaceId} onValueChange={setTypefaceId} />
-              </div>
-            </InspectorSection>
+              </InspectorSection>
 
-            <InspectorSection title="Finish" aside={colorway.label}>
-              <ColorwayPicker
-                colorways={colorways}
-                value={colorway.id}
-                onValueChange={setColorwayId}
-              />
-            </InspectorSection>
+              <InspectorSection title="Finish" aside={colorway.label}>
+                <ColorwayPicker
+                  colorways={colorways}
+                  value={colorway.id}
+                  onValueChange={setColorwayId}
+                />
+              </InspectorSection>
+            </InspectorGroup>
 
-            <InspectorSection title="Details">
-              <DetailsForm member={member} onMemberChange={setMember} />
-            </InspectorSection>
-          </div>
+            <InspectorGroup
+              title="Member"
+              icon={
+                <HugeiconsIcon
+                  icon={UserIcon}
+                  strokeWidth={1.75}
+                  className="size-4"
+                />
+              }
+            >
+              <InspectorSection
+                title="Details"
+                description="Holder info and what appears on the card."
+              >
+                <DetailsForm
+                  brand={brand}
+                  variantId={variantId}
+                  member={member}
+                  onMemberChange={setMember}
+                />
+              </InspectorSection>
+            </InspectorGroup>
+          </InspectorBody>
 
-          <div className="sticky bottom-0 mt-auto border-t border-foreground/10 bg-background p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <InspectorFooter>
             <Button
               type="button"
               size="lg"
@@ -225,32 +299,10 @@ export function Studio() {
                 ? exportState.message
                 : exportDimensions}
             </p>
-          </div>
-        </aside>
+          </InspectorFooter>
+        </Inspector>
       </div>
     </div>
-  )
-}
-
-function InspectorSection({
-  title,
-  aside,
-  children,
-}: {
-  title: string
-  aside?: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="flex flex-col gap-3 px-5 py-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-base font-medium sm:text-sm">{title}</h3>
-        {aside ? (
-          <p className="text-sm text-muted-foreground">{aside}</p>
-        ) : null}
-      </div>
-      {children}
-    </section>
   )
 }
 

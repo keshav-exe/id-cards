@@ -32,18 +32,28 @@ interface BrandPanelProps {
 
 const MAX_LOGO_BYTES = 4 * 1024 * 1024
 
-export function BrandPanel({
+export function BrandPanel(props: BrandPanelProps) {
+  return (
+    <div className="flex flex-col gap-4">
+      <BrandPullForm {...props} />
+      <BrandActiveCard {...props} />
+      <BrandLibrary {...props} />
+    </div>
+  )
+}
+
+export function BrandPullForm({
   brand,
   library,
   onBrandChange,
   onRemember,
-  logoInvert,
-  onLogoInvertChange,
-}: BrandPanelProps) {
+}: Pick<
+  BrandPanelProps,
+  "brand" | "library" | "onBrandChange" | "onRemember"
+>) {
   const [url, setUrl] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const logoRef = useRef<HTMLInputElement>(null)
 
   const cached = useMemo(
     () => (url.trim() ? findBrand(library, url) : undefined),
@@ -79,6 +89,68 @@ export function BrandPanel({
     }
   }
 
+  return (
+    <form onSubmit={pull} className="flex flex-col gap-3">
+      <Field data-invalid={error ? true : undefined}>
+        <FieldLabel htmlFor="brand-url">Website</FieldLabel>
+        <div className="flex min-w-0 gap-2">
+          <Input
+            id="brand-url"
+            name="url"
+            type="text"
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="linear.app"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onBlur={() => {
+              const next = withHttps(url)
+              if (next !== url) setUrl(next)
+            }}
+            aria-invalid={error ? true : undefined}
+            aria-busy={pending}
+            disabled={pending}
+            className="min-w-0 flex-1"
+          />
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={pending || !url.trim()}
+            className="max-w-36 shrink-0 truncate"
+          >
+            {pending
+              ? "Pulling…"
+              : cached
+                ? `Use ${cached.name}`
+                : "Pull brand"}
+          </Button>
+        </div>
+        {error ? (
+          <FieldError>{error}</FieldError>
+        ) : (
+          <FieldDescription>
+            Reads the site&apos;s logo, colours, and name.
+          </FieldDescription>
+        )}
+      </Field>
+    </form>
+  )
+}
+
+export function BrandActiveCard({
+  brand,
+  onRemember,
+  logoInvert,
+  onLogoInvertChange,
+}: Pick<
+  BrandPanelProps,
+  "brand" | "onRemember" | "logoInvert" | "onLogoInvertChange"
+>) {
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const logoRef = useRef<HTMLInputElement>(null)
+
   async function refresh() {
     if (pending) return
     setPending(true)
@@ -88,7 +160,9 @@ export function BrandPanel({
       revokeLogo(brand)
       onRemember(next)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't refresh that brand.")
+      setError(
+        err instanceof Error ? err.message : "Couldn't refresh that brand."
+      )
     } finally {
       setPending(false)
     }
@@ -135,6 +209,120 @@ export function BrandPanel({
     })
   }
 
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <BrandThumb
+          brand={brand}
+          invert={logoInvert}
+          className="size-11 rounded-lg sm:size-10"
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <p className="truncate text-base font-medium sm:text-sm">
+            {brand.name}
+          </p>
+          <p className="truncate font-mono text-sm text-muted-foreground tabular-nums">
+            {brand.domain}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Pull brand again"
+          title="Pull brand again"
+          disabled={pending}
+          onClick={() => void refresh()}
+          className="relative shrink-0"
+        >
+          <HugeiconsIcon icon={RefreshCcwIcon} strokeWidth={1.75} />
+          <span
+            className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
+            aria-hidden="true"
+          />
+        </Button>
+      </div>
+
+      <Swatches brand={brand} />
+
+      <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
+        <p className="text-sm text-muted-foreground">Logo</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <LogoPicker
+            logos={brand.logos}
+            value={brand.logo}
+            onValueChange={pickExtracted}
+          />
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            className="relative"
+            onClick={() => logoRef.current?.click()}
+          >
+            {brand.logo ? "Replace" : "Upload logo"}
+            <span
+              className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
+              aria-hidden="true"
+            />
+          </Button>
+          {brand.logo ? (
+            <Button
+              type="button"
+              size="xs"
+              variant={logoInvert ? "secondary" : "outline"}
+              aria-pressed={logoInvert}
+              onClick={() => onLogoInvertChange(!logoInvert)}
+              className="relative"
+            >
+              <HugeiconsIcon
+                icon={FlipHorizontalIcon}
+                strokeWidth={1.75}
+                data-icon="inline-start"
+              />
+              Invert
+              <span
+                className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
+                aria-hidden="true"
+              />
+            </Button>
+          ) : null}
+        </div>
+        {brand.logo ? (
+          <Button
+            type="button"
+            size="xs"
+            variant="link"
+            className="relative h-auto self-start px-0 text-muted-foreground"
+            onClick={clearLogo}
+          >
+            Use name instead
+            <span
+              className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
+              aria-hidden="true"
+            />
+          </Button>
+        ) : null}
+        <input
+          ref={logoRef}
+          type="file"
+          accept="image/svg+xml,image/png,.svg,.png"
+          tabIndex={-1}
+          className="hidden"
+          onChange={(event) => void onLogo(event)}
+        />
+      </div>
+
+      {error ? <FieldError>{error}</FieldError> : null}
+    </div>
+  )
+}
+
+export function BrandLibrary({
+  brand,
+  library,
+  onBrandChange,
+}: Pick<BrandPanelProps, "brand" | "library" | "onBrandChange">) {
   function chooseFromLibrary(id: string) {
     const next = library.find((entry) => entry.id === id)
     if (!next || next.id === brand.id) return
@@ -142,172 +330,19 @@ export function BrandPanel({
     onBrandChange(next)
   }
 
+  if (library.length === 0) return null
+
   return (
-    <div className="flex flex-col gap-4">
-      <form onSubmit={pull} className="flex flex-col gap-3">
-        <Field data-invalid={error ? true : undefined}>
-          <FieldLabel htmlFor="brand-url">Website</FieldLabel>
-          <div className="flex min-w-0 gap-2">
-            <Input
-              id="brand-url"
-              name="url"
-              type="text"
-              inputMode="url"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="linear.app"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onBlur={() => {
-                const next = withHttps(url)
-                if (next !== url) setUrl(next)
-              }}
-              aria-invalid={error ? true : undefined}
-              aria-busy={pending}
-              disabled={pending}
-              className="min-w-0 flex-1"
-            />
-            <Button
-              type="submit"
-              variant="outline"
-              disabled={pending || !url.trim()}
-              className="max-w-36 shrink-0 truncate"
-            >
-              {pending
-                ? "Pulling…"
-                : cached
-                  ? `Use ${cached.name}`
-                  : "Pull brand"}
-            </Button>
-          </div>
-          {error ? (
-            <FieldError>{error}</FieldError>
-          ) : (
-            <FieldDescription>
-              Reads the site&apos;s logo, colours, and name.
-            </FieldDescription>
-          )}
-        </Field>
-      </form>
-
-      <div className="flex flex-col gap-3 rounded-xl p-3 ring-1 ring-foreground/10">
-        <div className="flex items-start gap-3">
-          <BrandThumb
-            brand={brand}
-            invert={logoInvert}
-            className="size-11 rounded-lg sm:size-10"
-          />
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <p className="truncate text-base font-medium sm:text-sm">
-              {brand.name}
-            </p>
-            <p className="truncate font-mono text-sm text-muted-foreground">
-              {brand.domain}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Pull brand again"
-            title="Pull brand again"
-            disabled={pending}
-            onClick={() => void refresh()}
-            className="relative shrink-0"
-          >
-            <HugeiconsIcon icon={RefreshCcwIcon} strokeWidth={1.75} />
-            <span
-              className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
-              aria-hidden="true"
-            />
-          </Button>
-        </div>
-
-        <Swatches brand={brand} />
-
-        <div className="flex flex-col gap-2 border-t border-foreground/10 pt-3">
-          <p className="text-sm text-muted-foreground">Logo</p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <LogoPicker
-              logos={brand.logos}
-              value={brand.logo}
-              onValueChange={pickExtracted}
-            />
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              className="relative"
-              onClick={() => logoRef.current?.click()}
-            >
-              {brand.logo ? "Replace" : "Upload logo"}
-              <span
-                className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
-                aria-hidden="true"
-              />
-            </Button>
-            {brand.logo ? (
-              <Button
-                type="button"
-                size="xs"
-                variant={logoInvert ? "secondary" : "outline"}
-                aria-pressed={logoInvert}
-                onClick={() => onLogoInvertChange(!logoInvert)}
-                className="relative"
-              >
-                <HugeiconsIcon
-                  icon={FlipHorizontalIcon}
-                  strokeWidth={1.75}
-                  data-icon="inline-start"
-                />
-                Invert
-                <span
-                  className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
-                  aria-hidden="true"
-                />
-              </Button>
-            ) : null}
-          </div>
-          {brand.logo ? (
-            <Button
-              type="button"
-              size="xs"
-              variant="link"
-              className="relative h-auto self-start px-0 text-muted-foreground"
-              onClick={clearLogo}
-            >
-              Use name instead
-              <span
-                className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
-                aria-hidden="true"
-              />
-            </Button>
-          ) : null}
-          <input
-            ref={logoRef}
-            type="file"
-            accept="image/svg+xml,image/png,.svg,.png"
-            tabIndex={-1}
-            className="hidden"
-            onChange={(event) => void onLogo(event)}
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-muted-foreground">Library</p>
-        <RadioGroup
-          aria-label="Brand library"
-          value={brand.id}
-          onValueChange={(id) => chooseFromLibrary(String(id))}
-          className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-        >
-          {library.map((entry) => (
-            <LibraryTile key={entry.id} brand={entry} />
-          ))}
-        </RadioGroup>
-      </div>
-    </div>
+    <RadioGroup
+      aria-label="Brand library"
+      value={brand.id}
+      onValueChange={(id) => chooseFromLibrary(String(id))}
+      className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+    >
+      {library.map((entry) => (
+        <LibraryTile key={entry.id} brand={entry} />
+      ))}
+    </RadioGroup>
   )
 }
 
@@ -327,7 +362,7 @@ function LibraryTile({ brand }: { brand: Brand }) {
         {brand.name}
       </p>
       <span
-        className="pointer-fine:hidden absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2"
+        className="absolute top-1/2 left-1/2 size-[max(100%,3rem)] -translate-1/2 pointer-fine:hidden"
         aria-hidden="true"
       />
     </Radio.Root>
@@ -369,7 +404,9 @@ async function fetchBrand(url: string): Promise<Brand> {
   })
   const data = (await res.json()) as { brand?: Brand; error?: string }
   if (!res.ok || !data.brand) {
-    throw new Error(data.error ?? "Couldn't pull a usable brand from that site.")
+    throw new Error(
+      data.error ?? "Couldn't pull a usable brand from that site."
+    )
   }
   return data.brand
 }

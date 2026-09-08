@@ -32,7 +32,7 @@ export function VariantPicker({
         <Radio.Root
           key={variant.id}
           value={variant.id}
-          className="group/tile relative flex flex-col gap-2 rounded-xl p-2 text-left ring-1 ring-foreground/10 outline-none focus-visible:ring-2 focus-visible:ring-ring data-checked:bg-muted/60 data-checked:ring-2 data-checked:ring-foreground dark:data-checked:ring-foreground/80"
+          className="group/tile relative flex flex-col gap-2 rounded-lg border border-border p-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring data-checked:border-foreground/25 data-checked:bg-muted/50 data-checked:ring-2 data-checked:ring-foreground/80 dark:data-checked:border-foreground/20"
         >
           <MaterialSwatch
             material={variant.material}
@@ -98,7 +98,7 @@ function swatchBackground(material: MaterialId, base: string, accent: string) {
     case "brushed":
       return `linear-gradient(120deg, ${base} 0%, ${accent} 42%, ${base} 58%, ${base} 100%)`
     case "holo":
-      return `linear-gradient(115deg, ${base} 0%, ${accent} 30%, #c8a45a 45%, #4fb3a8 60%, #b05a9a 75%, ${base} 100%)`
+      return `linear-gradient(125deg, ${base} 0%, color-mix(in oklab, ${accent} 55%, ${base}) 38%, ${base} 72%, ${accent}66 100%)`
     case "carbon":
       return `repeating-linear-gradient(90deg, ${base} 0 3px, ${accent}66 3px 4px), repeating-linear-gradient(0deg, ${base} 0 3px, ${accent}33 3px 4px)`
     case "aurora":
